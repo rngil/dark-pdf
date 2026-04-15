@@ -1,0 +1,34 @@
+{
+  "name": "dark-pdf",
+  "version": "1.0.0",
+  "description": "Convert PDFs to dark version, with TOC preservation",
+  "keywords": [
+    "pdf",
+    "dark",
+    "conversion"
+  ],
+  "homepage": "https://github.com/rngil/dark-pdf#readme",
+  "bugs": {
+    "url": "https://github.com/rngil/dark-pdf/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rngil/dark-pdf.git"
+  },
+  "license": "MIT",
+  "author": "Renee Gil",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": "./src/index.js",
+  "bin": {
+    "darkpdf": "./cli.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.98",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^5.6.205"
+  }
+}
