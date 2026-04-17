@@ -20,7 +20,7 @@ async function resolveDestPage(dest, pdfDoc) {
   try { return await pdfDoc.getPageIndex(d[0]); } catch { return null; }
 }
 
-async function extractOutline(pdfDoc) {
+export async function extractOutline(pdfDoc) {
   let raw;
   try { raw = await pdfDoc.getOutline(); } catch { return null; }
   if (!raw?.length) return null;
@@ -40,7 +40,7 @@ async function extractOutline(pdfDoc) {
 }
 
 
-function applyOutline(pdfDoc, outline) {
+export function applyOutline(pdfDoc, outline) {
   if (!outline?.length) return;
   const { context } = pdfDoc;
   const pages = pdfDoc.getPages();
