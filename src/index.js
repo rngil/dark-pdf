@@ -1,3 +1,4 @@
+import { PDFArray, PDFDict, PDFHexString, PDFName, PDFNumber } from 'pdf-lib';
 
 export const THEMES = {
   classic:  { r: 0,  g: 0,  b: 0,  name: 'Classic' },
@@ -7,3 +8,90 @@ export const THEMES = {
   midnight: { r: 25, g: 30, b: 45, name: 'Midnight Blue' },
   forest:   { r: 25, g: 35, b: 30, name: 'Forest Green' },
 };
+
+// TOC tools
+async function resolveDestPage(dest, pdfDoc) {
+  if (!dest) return null;
+  let d = dest;
+  if (typeof d === 'string') {
+    try { d = await pdfDoc.getDestination(d); } catch { return null; }
+  }
+  if (!Array.isArray(d) || !d[0]) return null;
+  try { return await pdfDoc.getPageIndex(d[0]); } catch { return null; }
+}
+
+async function extractOutline(pdfDoc) {
+  let raw;
+  try { raw = await pdfDoc.getOutline(); } catch { return null; }
+  if (!raw?.length) return null;
+
+  async function walk(items) {
+    const out = [];
+    for (const item of items) {
+      out.push({
+        title: item.title ?? '',
+        pageIndex: await resolveDestPage(item.dest, pdfDoc),
+        items: item.items?.length ? await walk(item.items) : [],
+      });
+    }
+    return out;
+  }
+  return walk(raw);
+}
+
+
+function applyOutline(pdfDoc, outline) {
+  if (!outline?.length) return;
+  const { context } = pdfDoc;
+  const pages = pdfDoc.getPages();
+
+  function alloc(items) {
+    return items.map(item => ({
+      item,
+      ref: context.nextRef(),
+      kids: item.items?.length ? alloc(item.items) : [],
+    }));
+  }
+
+  function fill(nodes, parentRef) {
+    for (let i = 0; i < nodes.length; i++) {
+      const { item, ref, kids } = nodes[i];
+      const dict = PDFDict.withContext(context);
+
+      dict.set(PDFName.of('Title'), PDFHexString.fromText(item.title));
+      dict.set(PDFName.of('Parent'), parentRef);
+      if (i > 0)                dict.set(PDFName.of('Prev'), nodes[i - 1].ref);
+      if (i < nodes.length - 1) dict.set(PDFName.of('Next'), nodes[i + 1].ref);
+
+      const pi = item.pageIndex;
+      if (pi != null && pi >= 0 && pi < pages.length) {
+        const dest = PDFArray.withContext(context);
+        dest.push(pages[pi].ref);
+        dest.push(PDFName.of('Fit'));
+        dict.set(PDFName.of('Dest'), dest);
+      }
+
+      if (kids.length) {
+        fill(kids, ref);
+        dict.set(PDFName.of('First'), kids[0].ref);
+        dict.set(PDFName.of('Last'),  kids[kids.length - 1].ref);
+        dict.set(PDFName.of('Count'), PDFNumber.of(-kids.length));
+      }
+
+      context.assign(ref, dict);
+    }
+  }
+
+  const rootRef = context.nextRef();
+  const nodes   = alloc(outline);
+  fill(nodes, rootRef);
+
+  const root = PDFDict.withContext(context);
+  root.set(PDFName.of('Type'),  PDFName.of('Outlines'));
+  root.set(PDFName.of('First'), nodes[0].ref);
+  root.set(PDFName.of('Last'),  nodes[nodes.length - 1].ref);
+  root.set(PDFName.of('Count'), PDFNumber.of(outline.length));
+  context.assign(rootRef, root);
+
+  pdfDoc.catalog.set(PDFName.of('Outlines'), rootRef);
+}
