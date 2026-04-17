@@ -1,4 +1,4 @@
-#!/usr/bin/env 
+#!/usr/bin/env node 
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { convert, THEMES } from './src/index.js';
