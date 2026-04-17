@@ -1,4 +1,15 @@
-import { PDFArray, PDFDict, PDFHexString, PDFName, PDFNumber } from 'pdf-lib';
+import { readFile, writeFile } from 'node:fs/promises';
+import { resolve, basename, extname, dirname, join } from 'node:path';
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
+import { createCanvas } from '@napi-rs/canvas';
+import { PDFDocument, PDFArray, PDFDict, PDFHexString, PDFName, PDFNumber } from 'pdf-lib';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+
+const _require = createRequire(import.meta.url);
+pdfjsLib.GlobalWorkerOptions.workerSrc = pathToFileURL(
+  join(dirname(_require.resolve('pdfjs-dist/package.json')), 'legacy', 'build', 'pdf.worker.mjs')
+).href;
 
 export const THEMES = {
   classic:  { r: 0,  g: 0,  b: 0,  name: 'Classic' },
@@ -94,4 +105,70 @@ export function applyOutline(pdfDoc, outline) {
   context.assign(rootRef, root);
 
   pdfDoc.catalog.set(PDFName.of('Outlines'), rootRef);
+}
+
+// Core func
+export async function convert(inputPath, {
+  theme: themeName = 'claude',
+  output,
+  scale = 3,
+  onProgress,
+} = {}) {
+  const theme = THEMES[themeName];
+  if (!theme) throw new Error(`Unknown theme "${themeName}". Available: ${Object.keys(THEMES).join(', ')}`);
+
+  const rawBuf = await readFile(inputPath);
+  const data = new Uint8Array(rawBuf.buffer, rawBuf.byteOffset, rawBuf.byteLength);
+
+  const srcPdf = await pdfjsLib.getDocument({
+    data,
+    useWorkerFetch: false,
+    isEvalSupported: false,
+    useSystemFonts: true,
+    verbosity: 0,
+  }).promise;
+
+  const total = srcPdf.numPages;
+  const outline = await extractOutline(srcPdf);
+
+  const { r: br, g: bg, b: bb } = theme;
+  const outDoc = await PDFDocument.create();
+
+  for (let i = 0; i < total; i++) {
+    const page   = await srcPdf.getPage(i + 1);
+    const vp     = page.getViewport({ scale });
+    const canvas = createCanvas(vp.width, vp.height);
+    const ctx    = canvas.getContext('2d');
+
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+
+    const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const px = id.data;
+    for (let j = 0; j < px.length; j += 4) {
+      const factor = 1 - (0.299 * px[j] + 0.587 * px[j + 1] + 0.114 * px[j + 2]) / 255;
+      px[j]     = br + (255 - br) * factor;
+      px[j + 1] = bg + (255 - bg) * factor;
+      px[j + 2] = bb + (255 - bb) * factor;
+    }
+    ctx.putImageData(id, 0, 0);
+
+    const img = await outDoc.embedPng(canvas.toBuffer('image/png'));
+    outDoc.addPage([vp.width, vp.height]).drawImage(img, { x: 0, y: 0, width: vp.width, height: vp.height });
+
+    page.cleanup();
+    onProgress?.({ page: i + 1, total });
+  }
+
+  srcPdf.destroy();
+
+  if (outline?.length) applyOutline(outDoc, outline);
+
+  const outPath = output ?? (() => {
+    const base   = basename(inputPath, extname(inputPath));
+    const suffix = theme.name.toLowerCase().replace(/\s+/g, '_');
+    return resolve(dirname(resolve(inputPath)), `${base}_${suffix}_dark.pdf`);
+  })();
+
+  await writeFile(outPath, await outDoc.save());
+  return outPath;
 }
