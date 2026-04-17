@@ -2,5 +2,7 @@
 
 # dark-pdf
 
+[![Test](https://github.com/rngil/dark-pdf/actions/workflows/test.yml/badge.svg)](https://github.com/rngil/dark-pdf/actions/workflows/test.yml)
+
 ---
 Logo from [icon-icons.com](https://icon-icons.com/fr/icone/fichier-pdf/245974).
