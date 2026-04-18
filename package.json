@@ -1,6 +1,6 @@
 {
   "name": "dark-pdf",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Convert PDFs to dark version, with TOC preservation",
   "keywords": [
     "pdf",
@@ -21,7 +21,7 @@
   "main": "./src/index.js",
   "exports": "./src/index.js",
   "bin": {
-    "darkpdf": "./cli.js"
+    "darkpdf": "cli.js"
   },
   "scripts": {
     "test": "vitest run"
