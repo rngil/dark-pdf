@@ -32,6 +32,7 @@
     "pdfjs-dist": "^5.6.205"
   },
   "devDependencies": {
+    "prettier": "^3.8.3",
     "vitest": "^4.1.4"
   }
 }

@@ -22,32 +22,32 @@ darkpdf [options] <input.pdf>
 
 ### Options
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `-o, --output <path>` | `<input>_<theme>_dark.pdf` | Output file path |
-| `-t, --theme <name>` | `claude` | Theme to apply |
-| `-s, --scale <number>` | `3` | Render quality multiplier |
-| `-h, --help` | N/A | Show help |
+| Flag                   | Default                    | Description               |
+| ---------------------- | -------------------------- | ------------------------- |
+| `-o, --output <path>`  | `<input>_<theme>_dark.pdf` | Output file path          |
+| `-t, --theme <name>`   | `claude`                   | Theme to apply            |
+| `-s, --scale <number>` | `3`                        | Render quality multiplier |
+| `-h, --help`           | N/A                        | Show help                 |
 
 ### Themes
 
-| Name | Color |
-|------|-------|
-| `classic` | Pure black |
-| `claude` | Claude Warm |
-| `chatgpt` | ChatGPT Cool |
-| `sepia` | Sepia Dark |
+| Name       | Color         |
+| ---------- | ------------- |
+| `classic`  | Pure black    |
+| `claude`   | Claude Warm   |
+| `chatgpt`  | ChatGPT Cool  |
+| `sepia`    | Sepia Dark    |
 | `midnight` | Midnight Blue |
-| `forest` | Forest Green |
+| `forest`   | Forest Green  |
 
 ## Programmatic API
 
 ```js
-import { convert, THEMES } from 'dark-pdf';
+import { convert, THEMES } from "dark-pdf";
 
-const outPath = await convert('/path/to/input.pdf', {
-  theme: 'claude',   
-  output: '/path/to/output.pdf', 
+const outPath = await convert("/path/to/input.pdf", {
+  theme: "claude",
+  output: "/path/to/output.pdf",
   scale: 3,
   onProgress: ({ page, total }) => console.log(`${page}/${total}`),
 });

@@ -1,22 +1,23 @@
-#!/usr/bin/env node 
-import { resolve } from 'node:path';
-import { parseArgs } from 'node:util';
-import { convert, THEMES } from './src/index.js';
+#!/usr/bin/env node
+import { resolve } from "node:path";
+import { parseArgs } from "node:util";
+import { convert, THEMES } from "./src/index.js";
 
-const themeList = Object.keys(THEMES).join(', ');
+const themeList = Object.keys(THEMES).join(", ");
 
 const { values: opts, positionals } = parseArgs({
   allowPositionals: true,
   options: {
-    output: { type: 'string',  short: 'o' },
-    theme:  { type: 'string',  short: 't', default: 'claude' },
-    scale:  { type: 'string',  short: 's', default: '3' },
-    help:   { type: 'boolean', short: 'h', default: false },
+    output: { type: "string", short: "o" },
+    theme: { type: "string", short: "t", default: "claude" },
+    scale: { type: "string", short: "s", default: "3" },
+    help: { type: "boolean", short: "h", default: false },
   },
 });
 
 if (opts.help || positionals.length === 0) {
-  console.log(`
+  console.log(
+    `
 Usage: darkpdf [options] <input.pdf>
 
 Options:
@@ -25,7 +26,8 @@ Options:
                         Available: ${themeList}
   -s, --scale <number>  Render quality multiplier (default: 3)
   -h, --help            Show this help message
-`.trim());
+`.trim(),
+  );
   process.exit(0);
 }
 
@@ -35,7 +37,7 @@ if (!THEMES[opts.theme]) {
 }
 
 const scale = parseFloat(opts.scale);
-const log   = msg => process.stderr.write(msg + '\n');
+const log = (msg) => process.stderr.write(msg + "\n");
 
 let failed = false;
 for (const file of positionals) {
@@ -44,7 +46,7 @@ for (const file of positionals) {
 
   let lastPct = -1;
   function onProgress({ page, total }) {
-    const pct = Math.round(page / total * 100);
+    const pct = Math.round((page / total) * 100);
     if (pct !== lastPct) {
       process.stderr.write(`\r  Converting page ${page}/${total} (${pct}%)  `);
       lastPct = pct;
@@ -58,11 +60,11 @@ for (const file of positionals) {
       scale,
       onProgress,
     });
-    process.stderr.write('\n');
+    process.stderr.write("\n");
     log(`Done → ${outPath}`);
   } catch (err) {
-    process.stderr.write('\n');
-    console.error('Error:', err.message);
+    process.stderr.write("\n");
+    console.error("Error:", err.message);
     if (process.env.DEBUG) console.error(err.stack);
     failed = true;
   }
